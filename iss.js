@@ -59,21 +59,29 @@ const fetchISSFlyOverTimes = function(coords, callback) {
 };
 
 const nextISSTimesForMyLocation = function(callback) {
+  // Each function deal with its error then return error here -> return to nextISSTimesForMyLocation for displaying error
+
+  // fetchMyIP just take in a callback
   fetchMyIP((error, ip) => {
     if (error) {
+      // return to nextISSTimesForMyLocation to handle error
       return callback(error, null);
     }
 
+    // fetchCoordsByIP take in 1 arg and also a callback
     fetchCoordsByIP(ip, (error, coordinate) => {
       if (error) {
+        // return to nextISSTimesForMyLocation to handle error
         return callback(error, null);
       }
       
       fetchISSFlyOverTimes(coordinate,(error, flyoverData) => {
         if (error) {
+          // return to nextISSTimesForMyLocation to handle error
           return callback(error, null);
         }
         
+        // Finally send successful message
         callback(null, flyoverData);
       });
     
