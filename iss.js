@@ -13,7 +13,6 @@ const fetchMyIP = function(callback) {
       return;
     }
 
-    // if we get here, all's well and we got the data
     callback(error, JSON.parse(body).ip);
 
   });
@@ -26,20 +25,61 @@ const fetchCoordsByIP = (ip, callback) => {
       return;
     }
 
-    // parse the returned body so we can check its information
+
     const parsedBody = JSON.parse(body);
-    // check if "success" is true or not
+
     if (!parsedBody.success) {
       const message = `Success status was ${parsedBody.success}. Server message says: ${parsedBody.message} when fetching for IP ${parsedBody.ip}`;
       callback(Error(message), null);
       return;
     }
-    const passingParameter = { latitude: parsedBody.latitude, longitude: parsedBody.longitude };
+    const { latitude, longitude } = parsedBody;
 
-    // if we get here, all's well and we got the data
-    callback(error, passingParameter);
+    callback(error, {latitude, longitude});
 
   });
 };
 
-module.exports = { fetchMyIP, fetchCoordsByIP };
+const fetchISSFlyOverTimes = function(coords, callback) {
+  request(`https://iss-flyover.herokuapp.com/json/?lat=${coords.latitude}&lon=${coords.longitude}`, (error, response, body) => {
+    if (error) {
+      callback(error, null);
+      return;
+    }
+
+    if (response.statusCode !== 200) {
+      callback(Error(`Status Code ${response.statusCode} when fetching ISS pass times: ${body}`), null);
+      return;
+    }
+
+    const passesTime = JSON.parse(body).response;
+    callback(null, passesTime);
+
+  });
+};
+
+const nextISSTimesForMyLocation = function(callback) {
+  fetchMyIP((error, ip) => {
+    if (error) {
+      return callback(error, null);
+    }
+
+    fetchCoordsByIP(ip, (error, coordinate) => {
+      if (error) {
+        return callback(error, null);
+      }
+      
+      fetchISSFlyOverTimes(coordinate,(error, flyoverData) => {
+        if (error) {
+          return callback(error, null);
+        }
+        
+        callback(null, flyoverData);
+      });
+    
+    });
+
+  });
+};
+
+module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes, nextISSTimesForMyLocation };
